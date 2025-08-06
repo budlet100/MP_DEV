@@ -317,7 +317,7 @@ ${userName}
                 .join(' ');
         }
 
-        // Copy text to clipboard
+        // Simplified copy to clipboard function
         async function copyToClipboard(text, button) {
             try {
                 await navigator.clipboard.writeText(text);
@@ -326,10 +326,14 @@ ${userName}
                     button.textContent = 'Copy';
                 }, 2000);
             } catch (err) {
+                console.error('Clipboard API failed:', err);
                 // Fallback for older browsers
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
+                textarea.style.position = 'fixed'; // Prevent scrolling
+                textarea.style.opacity = '0'; // Hide visually
                 document.body.appendChild(textarea);
+                textarea.focus();
                 textarea.select();
                 try {
                     document.execCommand('copy');
@@ -338,7 +342,7 @@ ${userName}
                         button.textContent = 'Copy';
                     }, 2000);
                 } catch (err) {
-                    console.error('Copy failed:', err);
+                    console.error('Copy fallback failed:', err);
                     button.textContent = 'Copy Failed';
                     setTimeout(() => {
                         button.textContent = 'Copy';
@@ -347,6 +351,29 @@ ${userName}
                 document.body.removeChild(textarea);
             }
         }
+
+        // Set up copy button event listeners once
+        let currentMpFullName = '';
+        let currentMpEmail = '';
+        let currentLetter = '';
+
+        copyMpName.addEventListener('click', () => {
+            if (currentMpFullName) {
+                copyToClipboard(currentMpFullName, copyMpName);
+            }
+        });
+
+        copyMpEmail.addEventListener('click', () => {
+            if (currentMpEmail) {
+                copyToClipboard(currentMpEmail, copyMpEmail);
+            }
+        });
+
+        copyEmailContent.addEventListener('click', () => {
+            if (currentLetter) {
+                copyToClipboard(currentLetter, copyEmailContent);
+            }
+        });
 
         // Blur event listeners for validation
         const nameInput = document.getElementById('name');
@@ -500,11 +527,12 @@ ${userName}
             if (mpDataResult && mpDataResult.Email) {
                 const mpFirstName = mpDataResult.Forename;
                 const mpLastName = mpDataResult.Surname;
-                const mpFullName = `${mpFirstName} ${mpLastName}`;
+                currentMpFullName = `${mpFirstName} ${mpLastName}`;
+                currentMpEmail = mpDataResult.Email;
                 const policy = selectedPolicy;
-                const letter = letters[policy](userName, postcode, mpFirstName, mpLastName);
+                currentLetter = letters[policy](userName, postcode, mpFirstName, mpLastName);
                 const emailSubject = `Concerns about ${policy}`;
-                const emailBody = encodeURIComponent(letter);
+                const emailBody = encodeURIComponent(currentLetter);
                 const mailtoLink = `mailto:${mpDataResult.Email}?subject=${encodeURIComponent(emailSubject)}&body=${emailBody}`;
 
                 // Attempt to open email client
@@ -519,11 +547,6 @@ ${userName}
                 mailtoAnchor.click();
                 document.body.removeChild(mailtoAnchor);
 
-                // Set up copy button event listeners (outside setTimeout to avoid re-binding)
-                copyMpName.onclick = () => copyToClipboard(mpFullName, copyMpName);
-                copyMpEmail.onclick = () => copyToClipboard(mpDataResult.Email, copyMpEmail);
-                copyEmailContent.onclick = () => copyToClipboard(letter, copyEmailContent);
-
                 // Check if mailto opened (heuristic: use focus detection)
                 setTimeout(() => {
                     if (document.hasFocus()) {
@@ -533,9 +556,9 @@ ${userName}
                         emailFallback.classList.remove('hidden');
 
                         // Populate fallback content
-                        mpName.textContent = mpFullName;
-                        mpEmail.textContent = mpDataResult.Email;
-                        emailContent.textContent = letter;
+                        mpName.textContent = currentMpFullName;
+                        mpEmail.textContent = currentMpEmail;
+                        emailContent.textContent = currentLetter;
 
                         // Reset copy button states
                         copyMpName.textContent = 'Copy';
