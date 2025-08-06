@@ -141,6 +141,25 @@
             <div id="mpInfo" class="hidden bg-white p-4 rounded-lg">
                 <h2 class="text-xl font-semibold mb-2 gradient-text">Your MP</h2>
                 <p id="mpDetails" class="text-black"></p>
+                
+                <!-- No Email Message -->
+                <div id="noEmailMessage" class="hidden mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <h3 class="text-lg font-semibold gradient-text mb-2">Email Address Not Available</h3>
+                    <p class="text-black mb-2">Your MP has not added their email address to the parliamentary database.</p>
+                    <p class="text-black text-sm">You can still contact them using the details below:</p>
+                    <div class="mt-3">
+                        <p class="text-black mb-2">
+                            <strong>MP Name:</strong> <span id="noEmailMpName"></span>
+                            <button id="copyNoEmailMpName" type="button" class="copy-button ml-2 px-2 py-1 text-sm rounded-md">Copy</button>
+                        </p>
+                        <p class="text-black mb-2">
+                            <strong>Letter Content:</strong>
+                            <button id="copyNoEmailContent" type="button" class="copy-button ml-2 px-2 py-1 text-sm rounded-md">Copy</button>
+                        </p>
+                        <pre id="noEmailContent" class="text-black bg-gray-100 p-4 rounded-md text-sm overflow-auto max-h-64"></pre>
+                    </div>
+                </div>
+
                 <p id="emailStatus" class="mt-4 text-gray-600 hidden"></p>
                 <div id="emailFallback" class="hidden mt-4">
                     <h3 class="text-lg font-semibold text-black mb-2">Email Details</h3>
@@ -189,6 +208,13 @@
         const copyMpName = document.getElementById('copyMpName');
         const copyMpEmail = document.getElementById('copyMpEmail');
         const copyEmailContent = document.getElementById('copyEmailContent');
+        
+        // No email message elements
+        const noEmailMessage = document.getElementById('noEmailMessage');
+        const noEmailMpName = document.getElementById('noEmailMpName');
+        const noEmailContent = document.getElementById('noEmailContent');
+        const copyNoEmailMpName = document.getElementById('copyNoEmailMpName');
+        const copyNoEmailContent = document.getElementById('copyNoEmailContent');
 
         // Function to format the current date as DD/MM/YYYY
         function getCurrentDate() {
@@ -375,6 +401,19 @@ ${userName}
             }
         });
 
+        // No email copy button event listeners
+        copyNoEmailMpName.addEventListener('click', () => {
+            if (currentMpFullName) {
+                copyToClipboard(currentMpFullName, copyNoEmailMpName);
+            }
+        });
+
+        copyNoEmailContent.addEventListener('click', () => {
+            if (currentLetter) {
+                copyToClipboard(currentLetter, copyNoEmailContent);
+            }
+        });
+
         // Blur event listeners for validation
         const nameInput = document.getElementById('name');
         const emailInput = document.getElementById('email');
@@ -490,9 +529,37 @@ ${userName}
                 const mpName = `${mpDataResult.Forename} ${mpDataResult.Surname}`;
                 mpDetails.textContent = `${mpName} - ${mpConstituency}`; // Party not available
                 mpInfo.classList.remove('hidden');
-                contactMpButton.classList.remove('hidden');
-                emailStatus.classList.add('hidden');
-                emailFallback.classList.add('hidden'); // Hide fallback initially
+                
+                // Check if email is available
+                if (!mpDataResult.Email || mpDataResult.Email.trim() === '') {
+                    // No email available - show no email message
+                    contactMpButton.classList.add('hidden');
+                    emailStatus.classList.add('hidden');
+                    emailFallback.classList.add('hidden');
+                    noEmailMessage.classList.remove('hidden');
+                    
+                    // Generate letter for no-email case
+                    const userName = capitalizeName(document.getElementById('name').value);
+                    const selectedPolicy = document.querySelector('input[name="policy"]:checked').value;
+                    const mpFirstName = mpDataResult.Forename;
+                    const mpLastName = mpDataResult.Surname;
+                    currentMpFullName = `${mpFirstName} ${mpLastName}`;
+                    currentLetter = letters[selectedPolicy](userName, postcode, mpFirstName, mpLastName);
+                    
+                    // Populate no email content
+                    noEmailMpName.textContent = currentMpFullName;
+                    noEmailContent.textContent = currentLetter;
+                    
+                    // Reset copy button states
+                    copyNoEmailMpName.textContent = 'Copy';
+                    copyNoEmailContent.textContent = 'Copy';
+                } else {
+                    // Email available - show contact button
+                    contactMpButton.classList.remove('hidden');
+                    emailStatus.classList.add('hidden');
+                    emailFallback.classList.add('hidden');
+                    noEmailMessage.classList.add('hidden');
+                }
 
                 // Scroll to the MP Info section
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -503,6 +570,7 @@ ${userName}
                 contactMpButton.classList.add('hidden');
                 emailStatus.classList.add('hidden');
                 emailFallback.classList.add('hidden');
+                noEmailMessage.classList.add('hidden');
 
                 // Scroll to the MP Info section on error
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
