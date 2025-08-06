@@ -42,6 +42,13 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        .copy-button {
+            background: linear-gradient(to right, #C05621, #F6AD55);
+            color: white;
+        }
+        .copy-button:hover {
+            background: linear-gradient(to right, #9C4221, #D97706);
+        }
     </style>
 </head>
 <body>
@@ -58,7 +65,8 @@
     <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <img src="bpukimg.jpg" alt="BPUK Logo" class="w-32 h-32 object-contain mx-auto mb-4">
         <h1 class="text-3xl font-bold mb-2 text-center gradient-text tracking-tight">Contact Your MP About Bitcoin Policy</h1>
-        <p class="text-black mb-6">Make your voice heard on Bitcoin policy issues.</p>
+        <p class="text-black mb-2">Make your voice heard on Bitcoin policy issues.</p>
+        <p class="text-black text-sm mb-6">No personal data is collected or saved by this page.</p>
 
         <form id="mpContactForm" class="space-y-6">
             <!-- Personal Information Section -->
@@ -124,6 +132,22 @@
                 <h2 class="text-xl font-semibold mb-2 gradient-text">Your MP</h2>
                 <p id="mpDetails" class="text-black"></p>
                 <p id="emailStatus" class="mt-4 text-gray-600 hidden"></p>
+                <div id="emailFallback" class="hidden mt-4">
+                    <h3 class="text-lg font-semibold text-black mb-2">Email Details</h3>
+                    <p class="text-black mb-2">
+                        <strong>MP Name:</strong> <span id="mpName"></span>
+                        <button id="copyMpName" class="copy-button ml-2 px-2 py-1 text-sm rounded-md">Copy</button>
+                    </p>
+                    <p class="text-black mb-2">
+                        <strong>Email Address:</strong> <span id="mpEmail"></span>
+                        <button id="copyMpEmail" class="copy-button ml-2 px-2 py-1 text-sm rounded-md">Copy</button>
+                    </p>
+                    <p class="text-black mb-2">
+                        <strong>Email Content:</strong>
+                        <button id="copyEmailContent" class="copy-button ml-2 px-2 py-1 text-sm rounded-md">Copy</button>
+                    </p>
+                    <pre id="emailContent" class="text-black bg-gray-100 p-4 rounded-md text-sm overflow-auto max-h-64"></pre>
+                </div>
                 <button id="contactMpButton" 
                     class="mt-4 w-full gradient-button py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:ring-offset-2 transition-colors disabled:bg-gray-400 hidden">
                     Contact My MP
@@ -147,6 +171,13 @@
         const emailStatus = document.getElementById('emailStatus');
         const findMpButton = document.getElementById('findMpButton');
         const contactMpButton = document.getElementById('contactMpButton');
+        const emailFallback = document.getElementById('emailFallback');
+        const mpName = document.getElementById('mpName');
+        const mpEmail = document.getElementById('mpEmail');
+        const emailContent = document.getElementById('emailContent');
+        const copyMpName = document.getElementById('copyMpName');
+        const copyMpEmail = document.getElementById('copyMpEmail');
+        const copyEmailContent = document.getElementById('copyEmailContent');
 
         // Function to format the current date as DD/MM/YYYY
         function getCurrentDate() {
@@ -275,6 +306,37 @@ ${userName}
                 .join(' ');
         }
 
+        // Copy text to clipboard
+        async function copyToClipboard(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    button.textContent = 'Copied!';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    button.textContent = 'Copy Failed';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 2000);
+                }
+                document.body.removeChild(textarea);
+            }
+        }
+
         // Blur event listeners for validation
         const nameInput = document.getElementById('name');
         const emailInput = document.getElementById('email');
@@ -389,6 +451,7 @@ ${userName}
                 mpInfo.classList.remove('hidden');
                 contactMpButton.classList.remove('hidden');
                 emailStatus.classList.add('hidden');
+                emailFallback.classList.add('hidden'); // Hide fallback initially
 
                 // Scroll to the MP Info section
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -398,6 +461,7 @@ ${userName}
                 mpInfo.classList.remove('hidden');
                 contactMpButton.classList.add('hidden');
                 emailStatus.classList.add('hidden');
+                emailFallback.classList.add('hidden');
 
                 // Scroll to the MP Info section on error
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -418,16 +482,53 @@ ${userName}
             if (mpDataResult && mpDataResult.Email) {
                 const mpFirstName = mpDataResult.Forename;
                 const mpLastName = mpDataResult.Surname;
+                const mpFullName = `${mpFirstName} ${mpLastName}`;
                 const policy = selectedPolicy;
                 const letter = letters[policy](userName, postcode, mpFirstName, mpLastName);
+                const emailSubject = `Concerns about ${policy}`;
                 const emailBody = encodeURIComponent(letter);
-                const mailtoLink = `mailto:${mpDataResult.Email}?subject=Concerns%20about%20${encodeURIComponent(policy)}&body=${emailBody}`;
-                window.location.href = mailtoLink; // Directly open the email client
+                const mailtoLink = `mailto:${mpDataResult.Email}?subject=${encodeURIComponent(emailSubject)}&body=${emailBody}`;
+
+                // Attempt to open email client
                 emailStatus.textContent = "Opening your email client...";
                 emailStatus.classList.remove('hidden');
+                emailFallback.classList.add('hidden');
+
+                // Check if mailto opened (heuristic: use focus detection)
+                const startTime = Date.now();
+                window.location.href = mailtoLink;
+
+                // After 2 seconds, check if the window is still focused (implies mailto failed)
+                setTimeout(() => {
+                    if (document.hasFocus()) {
+                        // Mailto likely failed, show fallback
+                        emailStatus.textContent = "Unable to open email client. Please copy the details below and send manually.";
+                        emailStatus.classList.remove('hidden');
+                        emailFallback.classList.remove('hidden');
+
+                        // Populate fallback content
+                        mpName.textContent = mpFullName;
+                        mpEmail.textContent = mpDataResult.Email;
+                        emailContent.textContent = letter;
+
+                        // Reset copy button states
+                        copyMpName.textContent = 'Copy';
+                        copyMpEmail.textContent = 'Copy';
+                        copyEmailContent.textContent = 'Copy';
+
+                        // Scroll to fallback section
+                        emailFallback.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 2000);
+
+                // Set up copy button event listeners
+                copyMpName.onclick = () => copyToClipboard(mpFullName, copyMpName);
+                copyMpEmail.onclick = () => copyToClipboard(mpDataResult.Email, copyMpEmail);
+                copyEmailContent.onclick = () => copyToClipboard(letter, copyEmailContent);
             } else {
                 emailStatus.textContent = "Email not available for this MP";
                 emailStatus.classList.remove('hidden');
+                emailFallback.classList.add('hidden');
             }
         });
 
