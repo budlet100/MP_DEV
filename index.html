@@ -512,11 +512,19 @@ ${userName}
                 emailStatus.classList.remove('hidden');
                 emailFallback.classList.add('hidden');
 
-                // Check if mailto opened (heuristic: use focus detection)
-                const startTime = Date.now();
-                window.open(mailtoLink, '_self');
+                // Use a temporary <a> element to trigger mailto
+                const mailtoAnchor = document.createElement('a');
+                mailtoAnchor.href = mailtoLink;
+                document.body.appendChild(mailtoAnchor);
+                mailtoAnchor.click();
+                document.body.removeChild(mailtoAnchor);
 
-                // After 2 seconds, check if the window is still focused (implies mailto failed)
+                // Set up copy button event listeners (outside setTimeout to avoid re-binding)
+                copyMpName.onclick = () => copyToClipboard(mpFullName, copyMpName);
+                copyMpEmail.onclick = () => copyToClipboard(mpDataResult.Email, copyMpEmail);
+                copyEmailContent.onclick = () => copyToClipboard(letter, copyEmailContent);
+
+                // Check if mailto opened (heuristic: use focus detection)
                 setTimeout(() => {
                     if (document.hasFocus()) {
                         // Mailto likely failed, show fallback
@@ -538,11 +546,6 @@ ${userName}
                         emailFallback.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }, 2000);
-
-                // Set up copy button event listeners
-                copyMpName.onclick = () => copyToClipboard(mpFullName, copyMpName);
-                copyMpEmail.onclick = () => copyToClipboard(mpDataResult.Email, copyMpEmail);
-                copyEmailContent.onclick = () => copyToClipboard(letter, copyEmailContent);
             } else {
                 emailStatus.textContent = "Email not available for this MP";
                 emailStatus.classList.remove('hidden');
