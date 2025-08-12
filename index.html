@@ -125,6 +125,11 @@
                                     class="h-4 w-4 text-[#F5A623] focus:ring-[#F5A623] border-gray-600 bg-white">
                                 <label for="taxPolicy" class="ml-2 block text-sm text-black">Bitcoin Tax Treatment</label>
                             </div>
+                            <div class="flex items-center">
+                                <input id="reservePolicy" name="policy" type="radio" value="Strategic Bitcoin Reserve"
+                                    class="h-4 w-4 text-[#F5A623] focus:ring-[#F5A623] border-gray-600 bg-white">
+                                <label for="reservePolicy" class="ml-2 block text-sm text-black">Strategic Bitcoin Reserve</label>
+                            </div>
                         </div>
                         <p id="policyError" class="hidden text-[#EF4444] text-sm mt-1">Please select a policy issue</p>
                     </div>
@@ -306,6 +311,29 @@ A fair tax framework would reduce administrative burdens, provide clarity for bu
 I respectfully request your support in advocating for this critical reform. Please consider raising this issue with HM Treasury to ensure that tax policy aligns with the economic reality of DeFi transactions.
 
 Thank you for your attention to this important issue; I look forward to your response.
+
+Yours sincerely,
+${userName}
+`,
+            "Strategic Bitcoin Reserve": (userName, postcode, mpFirstName, mpLastName) => `
+${postcode}
+${getCurrentDate()}
+
+Dear ${mpFirstName} ${mpLastName},
+
+My name is ${userName}, and I am one of your constituents. My postcode address is set out above.
+
+I am writing to respectfully request that you use your position as my Member of Parliament to advocate for the protection and strategic management of the UK's current Bitcoin holdings of 61,250 BTC. These holdings are worth approximately $7.3 billion at today's price (August 2025), potentially making the UK the second-largest government holder of Bitcoin. These coins were seized by UK authorities in connection with an investment fraud and remain frozen, with ongoing legal efforts to determine their rightful ownership and whether they will be returned to victims or confiscated under UK law. Until this process concludes, the UK cannot legally forfeit or sell the coins. Once the ruling is made, the coins are likely to be returned or liquidated. In the meantime, those coins are being held by Komainu. With the national crypto custody tender now live, that arrangement could change by the end of 2025.
+
+In light of recent speculation that the Labour Party may consider liquidating the UK's Bitcoin reserves of 61,250 bitcoins, I urge you to engage with Labour MPs and key influential figures to present a smarter, more strategic approach to managing this valuable asset. We believe that Bitcoin should be viewed as a strategic financial opportunity rather than a liability to be sold.
+
+By holding onto these Bitcoin reserves, the UK can benefit from potential future appreciation in value, which could significantly boost the nation's financial position. Moreover, retaining these assets allows the UK to demonstrate leadership and innovation in the rapidly evolving cryptocurrency sector, potentially attracting more investment and technological advancement to the country.
+
+Furthermore, the strategic management of these Bitcoin holdings can involve exploring options such as using them as a reserve asset. This approach can enhance the UK's global financial influence and provide a hedge against economic uncertainties.
+
+I kindly urge you to advocate for a comprehensive review of the UK's strategy regarding these Bitcoin holdings and to consider the long-term benefits of retaining and strategically managing this asset. By doing so, you can help ensure that the UK maximises the potential value of its Bitcoin reserves and positions itself as a forward-thinking leader in the global financial landscape.
+
+Thank you for your attention to this important matter. I look forward to your support in ensuring that the UK's Bitcoin holdings are managed in a way that benefits all British citizens.
 
 Yours sincerely,
 ${userName}
