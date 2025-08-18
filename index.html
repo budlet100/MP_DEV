@@ -27,7 +27,7 @@
         }
         .gradient-button {
             background: linear-gradient(to right, #C05621, #F6AD55);
-            color: white;
+            color: white.
         }
         .gradient-button:hover {
             background: linear-gradient(to right, #9C4221, #D97706);
@@ -97,6 +97,14 @@
                             class="mt-1 block w-full rounded-md bg-white text-black border-gray-600 shadow-sm focus:border-[#F5A623] focus:ring-[#F5A623] px-3 py-2 placeholder-gray-400"
                             placeholder="your.email@example.com">
                         <p id="emailError" class="hidden text-[#EF4444] text-sm mt-1">Please enter a valid email address</p>
+                    </div>
+
+                    <!-- New optional address line 1 -->
+                    <div>
+                        <label for="addressLine1" class="block text-sm font-medium text-black">First line of address (optional)</label>
+                        <input type="text" id="addressLine1" name="addressLine1"
+                            class="mt-1 block w-full rounded-md bg-white text-black border-gray-600 shadow-sm focus:border-[#F5A623] focus:ring-[#F5A623] px-3 py-2 placeholder-gray-400"
+                            placeholder="Optional — increases your chances of a response">
                     </div>
 
                     <div>
@@ -230,10 +238,21 @@
             return `${day}/${month}/${year}`;
         }
 
+        // Helper to format address block (optional address line 1 + postcode)
+        function formatAddressBlock(addressLine1, postcode) {
+            // If the user supplied addressLine1, include it as the first line above the postcode.
+            if (addressLine1 && addressLine1.trim() !== '') {
+                return `${addressLine1.trim()}
+${postcode}`;
+            }
+            // Fallback: original behavior (postcode only).
+            return `${postcode}`;
+        }
+
         // Prepopulated letters
         const letters = {
-            "BTC Policy": (userName, postcode, mpFirstName, mpLastName) => `
-${postcode}
+            "BTC Policy": (userName, addressLine1, postcode, mpFirstName, mpLastName) => `
+${formatAddressBlock(addressLine1, postcode)}
 ${getCurrentDate()}
 
 Dear ${mpFirstName} ${mpLastName},
@@ -259,8 +278,8 @@ Thank you for your attention to this important matter. I look forward to your su
 Yours sincerely,
 ${userName}
 `,
-            "CBDC Policy": (userName, postcode, mpFirstName, mpLastName) => `
-${postcode}
+            "CBDC Policy": (userName, addressLine1, postcode, mpFirstName, mpLastName) => `
+${formatAddressBlock(addressLine1, postcode)}
 ${getCurrentDate()}
 
 Dear ${mpFirstName} ${mpLastName},
@@ -290,8 +309,8 @@ I would ask that you use your voice in Parliament strongly to reject the digital
 Yours sincerely,
 ${userName}
 `,
-            "Tax Policy": (userName, postcode, mpFirstName, mpLastName) => `
-${postcode}
+            "Tax Policy": (userName, addressLine1, postcode, mpFirstName, mpLastName) => `
+${formatAddressBlock(addressLine1, postcode)}
 ${getCurrentDate()}
 
 Dear ${mpFirstName} ${mpLastName},
@@ -315,8 +334,8 @@ Thank you for your attention to this important issue; I look forward to your res
 Yours sincerely,
 ${userName}
 `,
-            "Strategic Bitcoin Reserve": (userName, postcode, mpFirstName, mpLastName) => `
-${postcode}
+            "Strategic Bitcoin Reserve": (userName, addressLine1, postcode, mpFirstName, mpLastName) => `
+${formatAddressBlock(addressLine1, postcode)}
 ${getCurrentDate()}
 
 Dear ${mpFirstName} ${mpLastName},
@@ -447,6 +466,7 @@ ${userName}
         const emailInput = document.getElementById('email');
         const postcodeInput = document.getElementById('postcode');
         const policyInputs = document.querySelectorAll('input[name="policy"]');
+        const addressLine1Input = document.getElementById('addressLine1');
 
         nameInput.addEventListener('blur', () => {
             if (!nameInput.value.trim()) {
@@ -510,6 +530,22 @@ ${userName}
             }
         }
 
+        async function getMpData(constituency) {
+            const mpData = await fetchMpData();
+            const normalizedConstituency = constituency.toLowerCase().trim();
+            for (const row of mpData) {
+                const normalizedCsvConstituency = row.Constituency.toLowerCase().trim();
+                if (normalizedCsvConstituency === normalizedConstituency) {
+                    return {
+                        Forename: row.Forename,
+                        Surname: row.Surname,
+                        Email: row.Email
+                    };
+                }
+            }
+            return null;
+        }
+
         // Step 1: Find MP
         form.addEventListener('submit', async (e) => {
             e.preventDefault(); // Prevent default form submission
@@ -554,8 +590,8 @@ ${userName}
                 }
 
                 // Display MP details (name, party unknown, constituency)
-                const mpName = `${mpDataResult.Forename} ${mpDataResult.Surname}`;
-                mpDetails.textContent = `${mpName} - ${mpConstituency}`; // Party not available
+                const mpNameText = `${mpDataResult.Forename} ${mpDataResult.Surname}`;
+                mpDetails.textContent = `${mpNameText} - ${mpConstituency}`; // Party not available
                 mpInfo.classList.remove('hidden');
                 
                 // Check if email is available
@@ -568,11 +604,12 @@ ${userName}
                     
                     // Generate letter for no-email case
                     const userName = capitalizeName(document.getElementById('name').value);
-                    const selectedPolicy = document.querySelector('input[name="policy"]:checked').value;
+                    const selectedPolicyValue = document.querySelector('input[name="policy"]:checked').value;
                     const mpFirstName = mpDataResult.Forename;
                     const mpLastName = mpDataResult.Surname;
+                    const addressLine1 = document.getElementById('addressLine1').value || '';
                     currentMpFullName = `${mpFirstName} ${mpLastName}`;
-                    currentLetter = letters[selectedPolicy](userName, postcode, mpFirstName, mpLastName);
+                    currentLetter = letters[selectedPolicyValue](userName, addressLine1, postcode, mpFirstName, mpLastName);
                     
                     // Populate no email content
                     noEmailMpName.textContent = currentMpFullName;
@@ -618,6 +655,7 @@ ${userName}
 
             const userName = capitalizeName(document.getElementById('name').value);
             const postcode = normalizePostcode(document.getElementById('postcode').value);
+            const addressLine1 = document.getElementById('addressLine1').value || '';
             const selectedPolicy = document.querySelector('input[name="policy"]:checked').value;
 
             if (mpDataResult && mpDataResult.Email) {
@@ -626,7 +664,7 @@ ${userName}
                 currentMpFullName = `${mpFirstName} ${mpLastName}`;
                 currentMpEmail = mpDataResult.Email;
                 const policy = selectedPolicy;
-                currentLetter = letters[policy](userName, postcode, mpFirstName, mpLastName);
+                currentLetter = letters[policy](userName, addressLine1, postcode, mpFirstName, mpLastName);
                 const emailSubject = `Concerns about ${policy}`;
                 const emailBody = encodeURIComponent(currentLetter);
                 const mailtoLink = `mailto:${mpDataResult.Email}?subject=${encodeURIComponent(emailSubject)}&body=${emailBody}`;
@@ -671,22 +709,6 @@ ${userName}
                 emailFallback.classList.add('hidden');
             }
         });
-
-        async function getMpData(constituency) {
-            const mpData = await fetchMpData();
-            const normalizedConstituency = constituency.toLowerCase().trim();
-            for (const row of mpData) {
-                const normalizedCsvConstituency = row.Constituency.toLowerCase().trim();
-                if (normalizedCsvConstituency === normalizedConstituency) {
-                    return {
-                        Forename: row.Forename,
-                        Surname: row.Surname,
-                        Email: row.Email
-                    };
-                }
-            }
-            return null;
-        }
     </script>
 </body>
 </html>
