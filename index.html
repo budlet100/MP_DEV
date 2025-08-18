@@ -27,7 +27,7 @@
         }
         .gradient-button {
             background: linear-gradient(to right, #C05621, #F6AD55);
-            color: white.
+            color: white;
         }
         .gradient-button:hover {
             background: linear-gradient(to right, #9C4221, #D97706);
@@ -240,12 +240,10 @@
 
         // Helper to format address block (optional address line 1 + postcode)
         function formatAddressBlock(addressLine1, postcode) {
-            // If the user supplied addressLine1, include it as the first line above the postcode.
             if (addressLine1 && addressLine1.trim() !== '') {
                 return `${addressLine1.trim()}
 ${postcode}`;
             }
-            // Fallback: original behavior (postcode only).
             return `${postcode}`;
         }
 
@@ -400,11 +398,10 @@ ${userName}
                 }, 2000);
             } catch (err) {
                 console.error('Clipboard API failed:', err);
-                // Fallback for older browsers
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
-                textarea.style.position = 'fixed'; // Prevent scrolling
-                textarea.style.opacity = '0'; // Hide visually
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
                 document.body.appendChild(textarea);
                 textarea.focus();
                 textarea.select();
@@ -497,13 +494,13 @@ ${userName}
                 document.getElementById('postcodeError').classList.remove('hidden');
             } else {
                 document.getElementById('postcodeError').classList.add('hidden');
-                postcodeInput.value = normalized; // Update input field with normalized format
+                postcodeInput.value = normalized;
             }
         });
 
         // Fetch and parse CSV data
         let mpDataCache = null;
-        let mpDataResult = null; // Store MP data for use in contact step
+        let mpDataResult = null;
 
         async function fetchMpData() {
             if (mpDataCache) return mpDataCache;
@@ -548,9 +545,8 @@ ${userName}
 
         // Step 1: Find MP
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent default form submission
+            e.preventDefault();
 
-            // Validate policy selection
             const selectedPolicy = document.querySelector('input[name="policy"]:checked');
             if (!selectedPolicy) {
                 document.getElementById('policyError').classList.remove('hidden');
@@ -566,12 +562,10 @@ ${userName}
                 return;
             }
 
-            // Disable button and show loading state
             findMpButton.disabled = true;
             findMpButton.textContent = 'Loading...';
 
             try {
-                // Use Postcodes.io to get constituency
                 const apiUrl = `https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`;
                 const response = await fetch(apiUrl);
                 if (!response.ok) {
@@ -589,20 +583,16 @@ ${userName}
                     throw new Error('MP not found for this constituency');
                 }
 
-                // Display MP details (name, party unknown, constituency)
                 const mpNameText = `${mpDataResult.Forename} ${mpDataResult.Surname}`;
-                mpDetails.textContent = `${mpNameText} - ${mpConstituency}`; // Party not available
+                mpDetails.textContent = `${mpNameText} - ${mpConstituency}`;
                 mpInfo.classList.remove('hidden');
                 
-                // Check if email is available
                 if (!mpDataResult.Email || mpDataResult.Email.trim() === '') {
-                    // No email available - show no email message
                     contactMpButton.classList.add('hidden');
                     emailStatus.classList.add('hidden');
                     emailFallback.classList.add('hidden');
                     noEmailMessage.classList.remove('hidden');
                     
-                    // Generate letter for no-email case
                     const userName = capitalizeName(document.getElementById('name').value);
                     const selectedPolicyValue = document.querySelector('input[name="policy"]:checked').value;
                     const mpFirstName = mpDataResult.Forename;
@@ -611,22 +601,18 @@ ${userName}
                     currentMpFullName = `${mpFirstName} ${mpLastName}`;
                     currentLetter = letters[selectedPolicyValue](userName, addressLine1, postcode, mpFirstName, mpLastName);
                     
-                    // Populate no email content
                     noEmailMpName.textContent = currentMpFullName;
                     noEmailContent.textContent = currentLetter;
                     
-                    // Reset copy button states
                     copyNoEmailMpName.textContent = 'Copy';
                     copyNoEmailContent.textContent = 'Copy';
                 } else {
-                    // Email available - show contact button
                     contactMpButton.classList.remove('hidden');
                     emailStatus.classList.add('hidden');
                     emailFallback.classList.add('hidden');
                     noEmailMessage.classList.add('hidden');
                 }
 
-                // Scroll to the MP Info section
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (error) {
                 console.error('Error fetching MP data:', error);
@@ -637,10 +623,8 @@ ${userName}
                 emailFallback.classList.add('hidden');
                 noEmailMessage.classList.add('hidden');
 
-                // Scroll to the MP Info section on error
                 mpInfo.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } finally {
-                // Re-enable button
                 findMpButton.disabled = false;
                 findMpButton.textContent = 'Find My MP';
             }
@@ -663,43 +647,35 @@ ${userName}
                 const mpLastName = mpDataResult.Surname;
                 currentMpFullName = `${mpFirstName} ${mpLastName}`;
                 currentMpEmail = mpDataResult.Email;
-                const policy = selectedPolicy;
-                currentLetter = letters[policy](userName, addressLine1, postcode, mpFirstName, mpLastName);
-                const emailSubject = `Concerns about ${policy}`;
+                currentLetter = letters[selectedPolicy](userName, addressLine1, postcode, mpFirstName, mpLastName);
+                const emailSubject = `Concerns about ${selectedPolicy}`;
                 const emailBody = encodeURIComponent(currentLetter);
                 const mailtoLink = `mailto:${mpDataResult.Email}?subject=${encodeURIComponent(emailSubject)}&body=${emailBody}`;
 
-                // Attempt to open email client
                 emailStatus.textContent = "Opening your email client...";
                 emailStatus.classList.remove('hidden');
                 emailFallback.classList.add('hidden');
 
-                // Use a temporary <a> element to trigger mailto
                 const mailtoAnchor = document.createElement('a');
                 mailtoAnchor.href = mailtoLink;
                 document.body.appendChild(mailtoAnchor);
                 mailtoAnchor.click();
                 document.body.removeChild(mailtoAnchor);
 
-                // Check if mailto opened (heuristic: use focus detection)
                 setTimeout(() => {
                     if (document.hasFocus()) {
-                        // Mailto likely failed, show fallback
                         emailStatus.textContent = "Unable to open email client. Please copy the details below and send manually.";
                         emailStatus.classList.remove('hidden');
                         emailFallback.classList.remove('hidden');
 
-                        // Populate fallback content
                         mpName.textContent = currentMpFullName;
                         mpEmail.textContent = currentMpEmail;
                         emailContent.textContent = currentLetter;
 
-                        // Reset copy button states
                         copyMpName.textContent = 'Copy';
                         copyMpEmail.textContent = 'Copy';
                         copyEmailContent.textContent = 'Copy';
 
-                        // Scroll to fallback section
                         emailFallback.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }, 2000);
